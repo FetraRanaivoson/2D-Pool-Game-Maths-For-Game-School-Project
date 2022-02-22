@@ -264,7 +264,7 @@ void Game::listenForBallCollision()
 	}
 }
 
-string Game::getAndRemoveBallInsideHole(int& minIndex)
+string Game::getAndRemoveBallInsideHole(int& minIndex, string& ballInsideHoleType)
 {
 	int index = -1;
 	if (this->players[0]->isTurn() == true) {
@@ -274,23 +274,24 @@ string Game::getAndRemoveBallInsideHole(int& minIndex)
 		index = 1;
 	}
 
-	string ballInsideHoleType = "";
+	//string ballInsideHoleType = "";
 
-	for (int j = 0; j < NUMBER_OF_BALLS; j++) {
+	for (int j = 0; j < numberOfBalls; j++) {
 
 		if (this->balls[j]->fallInside(table)) {
 			if (j != BLANC) {
 				ballInsideHoleType = this->balls[j]->getType(); //////
-				this->balls[j]->setSpeed(Vector(0, 0)); /////
 				delete this->balls[j];
 				string ballToMoveType = this->balls[numberOfBalls - 1]->getType(); ////
 				this->balls[j] = this->balls[numberOfBalls - 1];
 				this->balls[j]->setType(ballToMoveType); /////
-				numberOfBalls--;
+				/*this->balls[j]->setPosition(Point(width/4 + j + 5, height - 20,false));
+				this->balls[j]->setSpeed(Vector(0, 0));*/
+				this->numberOfBalls--;
 			}
 			if (j == BLANC) {
 				this->balls[j]->setPosition(Point(this->width / 2, 3 * this->height / 3 - 50.0, true));
-				this->balls[j]->setSpeed(Vector(0, 0));
+				
 			}
 		}
 	}
@@ -301,36 +302,51 @@ string Game::getAndRemoveBallInsideHole(int& minIndex)
 
 void Game::displayScreen(SDL_Renderer* renderer, int& minIndex, string& ballInsideHoleType)
 {
-	clearWindow(renderer);
-	SDL_Event event = getNextEvent();
+		clearWindow(renderer);
+		SDL_Event event = getNextEvent();
 
-	this->displayTable(renderer);
-	this->displayBalls(renderer, event);
-	this->displayQueues(renderer, event);
+		this->displayTable(renderer);
+		this->displayBalls(renderer, event);
+		this->displayQueues(renderer, event);
 
-	minIndex = this->visualizeBallPath(renderer);
-	this->listenForBallCollision();
+		minIndex = this->visualizeBallPath(renderer);
 
-	ballInsideHoleType = getAndRemoveBallInsideHole(minIndex);
+		this->listenForBallCollision();
+		ballInsideHoleType = getAndRemoveBallInsideHole(minIndex, ballInsideHoleType);
 
-	showRenderingBuffer(renderer);
-	//endOfGame = keypressed(event, '\033');
+
+		showRenderingBuffer(renderer);
+		//end = keypressed(event, '\033');
 }
 
-void Game::displayScore()
+void Game::displayScore(string& ballInsideHoleType)
 {
 	this->players[0]->isTurn()
 		? cout << "Player 1 next..." <<
-		"P1= " << this->players[0]->getTotalBall() << "(" << players[0]->getPlayerBallsType() << ")" << ", P2= " << this->players[1]->getTotalBall() << "(" << players[1]->getPlayerBallsType() << ")" << endl
+		"P1= " << this->players[0]->getTotalBall() << "(" << players[0]->getPlayerBallsType() << ")" << ", P2= " << this->players[1]->getTotalBall() << "(" << players[1]->getPlayerBallsType() << ")" << ", In: " << ballInsideHoleType << endl
 
 		: cout << "Player 2 next..." <<
-		"P1= " << this->players[0]->getTotalBall() << "(" << players[0]->getPlayerBallsType() << ")" << ", P2= " << this->players[1]->getTotalBall() << "(" << players[1]->getPlayerBallsType() << ")" << endl;
+		"P1= " << this->players[0]->getTotalBall() << "(" << players[0]->getPlayerBallsType() << ")" << ", P2= " << this->players[1]->getTotalBall() << "(" << players[1]->getPlayerBallsType() << ")" << ", In: " << ballInsideHoleType << endl;
 
 }
 
+void Game::switchTurn()
+{
+	if (players[0]->isTurn()) {
+		this->players[1]->setTurn(true);
+		this->players[0]->setTurn(false);
+	}
+	else if (players[1]->isTurn()) {
+		this->players[0]->setTurn(true);
+		this->players[1]->setTurn(false);
+	}
+}
+
+
+
 void Game::waitForPlayerHit(SDL_Renderer* renderer, int& minIndex, string& ballInsideHoleType)
 {
-	this->displayScore();
+	this->displayScore(ballInsideHoleType);
 
 	if (this->players[0]->isTurn() || this->players[1]->isTurn()) {
 		do {
@@ -349,7 +365,7 @@ void Game::waitForBallToStop(int& minIndex, SDL_Renderer* renderer, string& ball
 		this->displayScreen(renderer, minIndex, ballInsideHoleType);
 		count = 0;
 		for (int i = 0; i < this->numberOfBalls; i++) {
-			if (abs(this->balls[i]->getSpeed().x) <= 3 && abs(this->balls[i]->getSpeed().y) <= 3) {
+			if (abs(this->balls[i]->getSpeed().x) <= 5 && abs(this->balls[i]->getSpeed().y) <= 5) {
 				count++;
 			}
 		}
@@ -358,6 +374,7 @@ void Game::waitForBallToStop(int& minIndex, SDL_Renderer* renderer, string& ball
 		}
 	} while (stopped == false);
 	cout << "All balls have stopped" << endl;
+	//this->displayScore(ballInsideHoleType);
 	cout << "========================================================" << endl;
 }
 
@@ -447,6 +464,7 @@ void Game::start() {
 
 	SDL_Renderer* renderer = init_SDL("Billard game");
 
+
 	//ROUND 1: get ball type
 	int minIndex = -1;
 	string ballInsideHoleType = "";
@@ -467,18 +485,18 @@ void Game::start() {
 			this->switchToPlayer1();
 			this->player1GotBallsRayées();
 		}
-		
+
 		else if (this->player1InsertedBallPleine(ballInsideHoleType)) {
 			this->switchToPlayer1();
 			this->player1GotBallsPleines();
 		}
 
-		
+
 		else if (this->player2InsertedBallRayée(ballInsideHoleType)) {
 			this->switchToPlayer2();
 			this->player2GotBallsRayées();
 		}
-		
+
 		else if (player2InsertedBallPleine(ballInsideHoleType)) {
 			this->switchToPlayer2();
 			this->player2GotBallsPleines();
@@ -488,21 +506,54 @@ void Game::start() {
 	//ROUND 2: insert
 	minIndex = -1;
 	ballInsideHoleType = "";
-	do {
+	while (this->players[0]->getTotalBall() != 0 || this->players[1]->getTotalBall() != 0) {
 		cout << "Round 2" << endl;
 		this->waitForPlayerHit(renderer, minIndex, ballInsideHoleType);
 		this->waitForBallToStop(minIndex, renderer, ballInsideHoleType);
 
-		//TODO:
 		if (this->player1MissesTheHole(ballInsideHoleType)) {
 			this->switchToPlayer2();
+			cout << "Player1 missed it!" << endl;
 		}
-		else if (player2MissesTheHole(ballInsideHoleType)) {
+		else if (this->player2MissesTheHole(ballInsideHoleType)) {
 			this->switchToPlayer1();
+			cout << "Player2 missed it!" << endl;
 		}
 
-	} while (this->players[0]->getTotalBall() != 0 || this->players[0]->getTotalBall() != 0);
+		//Win: Sthg inside
+		else if (this->players[0]->isTurn() && ballInsideHoleType == this->players[0]->getPlayerBallsType()) {
+			cout << "Player1 got it!" << endl;
+			this->switchToPlayer1();
+			this->players[0]->decrementTotalBall();
+		}
+
+		else if (this->players[1]->isTurn() && ballInsideHoleType == this->players[1]->getPlayerBallsType()) {
+			cout << "Player2 got it!" << endl;
+			this->switchToPlayer2();
+			this->players[1]->decrementTotalBall();
+		}
+
+		//Loose: Sthg inside but wrong
+		else if (this->players[0]->isTurn() && ballInsideHoleType == this->players[1]->getPlayerBallsType()) {
+			cout << "Player1 got the wrong ball!" << endl;
+			this->switchToPlayer2();
+			this->players[1]->decrementTotalBall();
+		}
+
+		else if (this->players[1]->isTurn() && ballInsideHoleType == this->players[0]->getPlayerBallsType()) {
+			cout << "Player2 got the wrong ball!" << endl;
+			this->switchToPlayer1();
+			this->players[0]->decrementTotalBall();
+		}
+
+
+
+	}
 
 	//ROUND 3: insert black ball
-
+	cout << "Round 3" << endl;
+	do {
+		this->waitForPlayerHit(renderer, minIndex, ballInsideHoleType);
+		this->waitForBallToStop(minIndex, renderer, ballInsideHoleType);
+	} while (true);
 }
