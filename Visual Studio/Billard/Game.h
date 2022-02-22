@@ -62,7 +62,7 @@ private:
 	double sqrDistance(Point a, Point b);
 	int visualizeBallPath(SDL_Renderer* renderer);
 	void listenForBallCollision();
-	string getAndRemoveBallInsideHole(int& minIndex);
+	string getAndRemoveBallInsideHole(int& minIndex, string& ballInsideHoleType);
 
 
 	void displayScreen(SDL_Renderer* renderer, int& minIndex, string& ballInsideHoleType);
@@ -84,7 +84,11 @@ private:
 	void player2GotBallsRayées();
 	void player2GotBallsPleines();
 
-	void displayScore();
+	void displayScore(string& ballInsideHoleType);
+
+	
+	void switchTurn();
+
 
 public:
 	bool playersDontHaveSpecificBallType;

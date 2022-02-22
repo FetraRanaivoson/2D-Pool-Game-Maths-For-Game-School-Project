@@ -11,5 +11,6 @@ int main(int argc, char** argv) {
 	Game billardGame(WIDTH,HEIGHT);
 	
 	billardGame.start();
+
 	return 0;
 }
